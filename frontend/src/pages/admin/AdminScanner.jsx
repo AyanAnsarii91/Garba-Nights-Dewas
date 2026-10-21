@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   Camera,
   CheckCircle2,
@@ -10,6 +10,10 @@ import {
 } from "lucide-react";
 
 import { scanAdminTicket } from "../../services/adminApi";
+
+const AdminCameraScanner = lazy(
+  () => import("../../components/admin/AdminCameraScanner"),
+);
 
 const RESULT_CONFIG = {
   SUCCESS: {
@@ -47,9 +51,8 @@ export default function AdminScanner() {
 
   const [result, setResult] = useState(null);
 
-  const [error, setError] = useState("");
-
   const inputRef = useRef(null);
+  const scanLockRef = useRef(false);
 
   useEffect(() => {
     if (mode === "manual") {
@@ -60,13 +63,14 @@ export default function AdminScanner() {
   const handleScan = async (value) => {
     const cleanValue = value?.trim();
 
-    if (!cleanValue || scanning) {
+    if (!cleanValue || scanLockRef.current) {
       return;
     }
 
+    scanLockRef.current = true;
+
     try {
       setScanning(true);
-      setError("");
       setResult(null);
 
       const response = await scanAdminTicket(cleanValue);
@@ -84,14 +88,15 @@ export default function AdminScanner() {
       setResult({
         result: error?.result || "INVALID",
         message: error.message || "Unable to scan ticket",
-        data: null,
+        data: error?.data || null,
       });
     } finally {
+      scanLockRef.current = false;
       setScanning(false);
 
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+      if (mode === "manual") {
+        setTimeout(() => inputRef.current?.focus(), 100);
+      }
     }
   };
 
@@ -103,12 +108,11 @@ export default function AdminScanner() {
 
   const resetScanner = () => {
     setResult(null);
-    setError("");
     setToken("");
 
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
+    if (mode === "manual") {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
   };
 
   const resultType = result?.result || null;
@@ -167,26 +171,18 @@ export default function AdminScanner() {
       {!result ? (
         <div className="rounded-[2rem] border border-white/70 bg-white/80 p-6 shadow-[0_20px_70px_rgba(15,118,110,0.1)] backdrop-blur-xl sm:p-10">
           {mode === "camera" ? (
-            <div className="flex min-h-[360px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-cyan-200 bg-cyan-50/50 text-center">
-              <Camera size={48} className="text-cyan-500" />
-
-              <h2 className="mt-4 text-lg font-black text-slate-900">
-                Camera scanner
-              </h2>
-
-              <p className="mt-2 max-w-md text-sm text-slate-500">
-                Camera QR scanning will be connected here. The backend
-                validation endpoint is already ready.
-              </p>
-
-              <button
-                type="button"
-                onClick={() => setMode("manual")}
-                className="mt-5 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
-              >
-                Use scanner input
-              </button>
-            </div>
+            <Suspense
+              fallback={
+                <div className="flex min-h-[300px] items-center justify-center text-sm font-semibold text-slate-500">
+                  Loading camera scanner...
+                </div>
+              }
+            >
+              <AdminCameraScanner
+                onDetected={handleScan}
+                onUseManual={() => setMode("manual")}
+              />
+            </Suspense>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="flex min-h-[260px] flex-col items-center justify-center rounded-3xl bg-slate-950 px-6 text-center">

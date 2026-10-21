@@ -88,7 +88,10 @@ export const adminRequest = async (endpoint, options = {}) => {
       clearAdminAuth();
     }
 
-    throw new Error(data.message || "Something went wrong");
+    const error = new Error(data.message || "Something went wrong");
+    error.result = data.result;
+    error.data = data.data;
+    throw error;
   }
 
   return data;
@@ -143,7 +146,7 @@ export const getAdminCheckins = async ({
 };
 
 export const scanAdminTicket = async (qrToken) => {
-  return adminRequest("/admin/scanner/scan", {
+  return adminRequest("/admin/checkins/scan", {
     method: "POST",
     body: JSON.stringify({
       qrToken,
@@ -246,8 +249,5 @@ export const logoutAdmin = () => {
 };
 
 export const scanTicket = async (qrToken) => {
-  return adminRequest("/checkins/scan", {
-    method: "POST",
-    body: JSON.stringify({ qrToken }),
-  });
+  return scanAdminTicket(qrToken);
 };
