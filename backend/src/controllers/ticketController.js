@@ -12,7 +12,11 @@ const ticketFields =
 const orderFields = "orderNumber paymentStatus subtotal convenienceFee totalAmount paidAt";
 
 const serializeTicket = async (ticket) => {
-  const qrCode = await QRCode.toDataURL(ticket.qrToken);
+  const qrCode = await QRCode.toDataURL(ticket.qrToken, {
+    errorCorrectionLevel: "H",
+    margin: 4,
+    width: 800,
+  });
 
   return {
     ticketNumber: ticket.ticketNumber,

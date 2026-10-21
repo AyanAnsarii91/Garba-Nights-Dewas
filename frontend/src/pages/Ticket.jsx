@@ -4,6 +4,8 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
+  Loader2,
   MapPin,
   ShieldCheck,
   Ticket as TicketIcon,
@@ -12,6 +14,7 @@ import {
 import { motion } from "motion/react";
 
 import { getTicketByNumber, getTicketsByOrder } from "../services/api.js";
+import { downloadTicketImage } from "../utils/downloadTicketImage.js";
 
 function Ticket() {
   const { orderId, ticketNumber } = useParams();
@@ -160,6 +163,8 @@ function Ticket() {
 }
 
 function TicketCard({ ticket, event }) {
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
   const eventDate = event?.eventDate ? new Date(event.eventDate) : null;
   const formattedDate =
     eventDate && !Number.isNaN(eventDate.getTime())
@@ -300,14 +305,48 @@ function TicketCard({ ticket, event }) {
       </div>
 
       <div className="border-t border-dashed border-slate-300/80 bg-slate-50/50 px-6 py-5 sm:px-10">
-        <div className="flex flex-col justify-between gap-3 text-xs text-slate-400 sm:flex-row sm:items-center">
-          <p>Issued by GarbaPass</p>
-          <p>
-            Ticket:{" "}
-            <span className="font-mono font-semibold text-slate-500">
-              {ticket.ticketNumber}
-            </span>
-          </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 text-xs text-slate-400">
+            <p>Issued by GarbaPass</p>
+            <p>
+              Ticket:{" "}
+              <span className="font-mono font-semibold text-slate-500">
+                {ticket.ticketNumber}
+              </span>
+            </p>
+            {downloadError && (
+              <p role="alert" className="font-semibold text-red-600">
+                {downloadError}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            disabled={downloading || !ticket.qrCode}
+            onClick={async () => {
+              setDownloading(true);
+              setDownloadError("");
+
+              try {
+                await downloadTicketImage(ticket, event);
+              } catch (error) {
+                console.error("Ticket download error:", error);
+                setDownloadError(
+                  error.message || "Unable to download this ticket.",
+                );
+              } finally {
+                setDownloading(false);
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {downloading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {downloading ? "Preparing ticket..." : "Download Ticket"}
+          </button>
         </div>
       </div>
     </motion.section>

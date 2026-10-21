@@ -24,3 +24,9 @@ Razorpay. The webhook endpoint is server-to-server and does not depend on CORS.
 Netlify should build the `frontend` directory with `npm run build`. Its
 `public/_redirects` fallback preserves React routes such as ticket pages on
 direct navigation and refresh.
+
+Paid tickets remain available from the backend using their order or ticket
+number URL, so customers can reopen the ticket page and download a PNG copy
+after refreshing or closing the browser. The download includes the event and
+attendee details plus the QR generated from the backend-held ticket token;
+entry validity is still checked by the backend scanner.
