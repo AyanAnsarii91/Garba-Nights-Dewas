@@ -1,0 +1,11 @@
+{
+  "id": "/",
+  "name": "GarbaPass",
+  "short_name": "GarbaPass",
+  "description": "Tickets and entry passes for Garba Night.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ecfffd",
+  "theme_color": "#0f766e"
+}
