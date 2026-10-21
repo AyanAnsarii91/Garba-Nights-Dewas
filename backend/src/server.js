@@ -11,10 +11,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`🚀 GarbaPass API running on port ${PORT}`);
-
-      console.log(`🌐 http://localhost:${PORT}`);
-
-      console.log(`❤️  http://localhost:${PORT}/api/health`);
+      console.log("❤️  API health check: /api/health");
     });
   } catch (error) {
     console.error("❌ Failed to start GarbaPass API:", error.message);

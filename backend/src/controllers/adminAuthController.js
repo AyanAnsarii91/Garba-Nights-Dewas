@@ -124,7 +124,11 @@ export const forgotPassword = async (req, res) => {
 
     await admin.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/+$/, "");
+
+    if (!frontendUrl) {
+      throw new Error("FRONTEND_URL must be configured to send reset links");
+    }
 
     const resetUrl = `${frontendUrl}/admin/reset-password?token=${rawToken}`;
 
