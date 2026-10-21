@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>GarbaPass API</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #08080d;
+        --card: rgba(255, 255, 255, 0.055);
+        --border: rgba(255, 255, 255, 0.1);
+        --text: #f8f8fb;
+        --muted: #9999a8;
+        --accent: #ff5c35;
+        --accent-2: #ff9f43;
+        --success: #35d07f;
+        --danger: #ff5c5c;
+      }
+
+      body {
+        min-height: 100vh;
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background:
+          radial-gradient(
+            circle at 15% 10%,
+            rgba(255, 92, 53, 0.18),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at 85% 20%,
+            rgba(255, 159, 67, 0.12),
+            transparent 28%
+          ),
+          var(--bg);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+          linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.025) 1px,
+            transparent 1px
+          );
+        background-size: 48px 48px;
+        mask-image: linear-gradient(to bottom, black, transparent 90%);
+      }
+
+      .container {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      header {
+        padding: 28px 0;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+        z-index: 2;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        box-shadow: 0 10px 35px rgba(255, 92, 53, 0.25);
+        font-size: 20px;
+      }
+
+      .brand-text strong {
+        display: block;
+        font-size: 16px;
+        letter-spacing: -0.3px;
+      }
+
+      .brand-text span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 13px;
+        border: 1px solid rgba(53, 208, 127, 0.2);
+        background: rgba(53, 208, 127, 0.08);
+        border-radius: 999px;
+        color: #8ff0ba;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 14px var(--success);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        50% {
+          opacity: 0.4;
+          transform: scale(0.75);
+        }
+      }
+
+      main {
+        padding: 90px 0 60px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero {
+        max-width: 850px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.055);
+        border: 1px solid var(--border);
+        color: #c8c8d3;
+        font-size: 12px;
+        margin-bottom: 22px;
+      }
+
+      h1 {
+        font-size: clamp(42px, 7vw, 76px);
+        line-height: 0.98;
+        letter-spacing: -4px;
+        max-width: 800px;
+      }
+
+      h1 span {
+        background: linear-gradient(100deg, #ff6841, #ffad55);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .subtitle {
+        margin-top: 24px;
+        max-width: 670px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.7;
+      }
+
+      .cards {
+        margin-top: 55px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+      }
+
+      .card {
+        padding: 22px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        backdrop-filter: blur(18px);
+      }
+
+      .card-label {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 11px;
+      }
+
+      .card-value {
+        font-size: 27px;
+        font-weight: 700;
+        letter-spacing: -1px;
+      }
+
+      .card-sub {
+        margin-top: 6px;
+        color: #707080;
+        font-size: 11px;
+      }
+
+      .section {
+        margin-top: 55px;
+      }
+
+      .section-title {
+        margin-bottom: 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #d8d8e0;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 14px;
+      }
+
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 24px;
+        backdrop-filter: blur(18px);
+      }
+
+      .endpoint {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .endpoint:last-child {
+        border-bottom: 0;
+      }
+
+      .endpoint-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .method {
+        font-size: 10px;
+        font-weight: 800;
+        padding: 5px 7px;
+        border-radius: 6px;
+        background: rgba(53, 208, 127, 0.1);
+        color: #7ee6ab;
+      }
+
+      code {
+        color: #e2e2eb;
+        font-size: 13px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .description {
+        color: var(--muted);
+        font-size: 12px;
+        text-align: right;
+      }
+
+      .db-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .db-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--success);
+        box-shadow: 0 0 14px var(--success);
+      }
+
+      .db-name {
+        font-weight: 600;
+        font-size: 15px;
+      }
+
+      .footer {
+        margin-top: 70px;
+        padding: 25px 0 35px;
+        border-top: 1px solid var(--border);
+        color: #656572;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .refresh {
+        color: #888895;
+      }
+
+      @media (max-width: 850px) {
+        .cards {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .container {
+          width: min(100% - 24px, 1120px);
+        }
+
+        main {
+          padding-top: 55px;
+        }
+
+        h1 {
+          letter-spacing: -2.5px;
+        }
+
+        .cards {
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
+          align-items: flex-start;
+        }
+
+        .status-pill {
+          font-size: 10px;
+        }
+
+        .endpoint {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .description {
+          text-align: left;
+        }
+
+        .footer {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="container nav">
+        <div class="brand">
+          <div class="logo">🎟️</div>
+
+          <div class="brand-text">
+            <strong>GarbaPass API</strong>
+            <span>Garba Nights · Dewas</span>
+          </div>
+        </div>
+
+        <div class="status-pill">
+          <span class="dot"></span>
+          API Operational
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="container">
+        <section class="hero">
+          <div class="eyebrow">🚀 Backend Service</div>
+
+          <h1>
+            Powering the
+            <span>GarbaPass</span>
+            experience.
+          </h1>
+
+          <p class="subtitle">
+            Secure ticketing infrastructure for Garba Nights. Payments,
+            inventory, QR tickets and event check-ins, all handled through one
+            reliable API.
+          </p>
+        </section>
+
+        <section class="cards">
+          <div class="card">
+            <div class="card-label">API STATUS</div>
+            <div class="card-value" id="apiStatus">Online</div>
+            <div class="card-sub">Service availability</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">UPTIME</div>
+            <div class="card-value" id="uptime">—</div>
+            <div class="card-sub">Since last restart</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">REQUESTS</div>
+            <div class="card-value" id="requests">—</div>
+            <div class="card-sub">Total API requests</div>
+          </div>
+
+          <div class="card">
+            <div class="card-label">REQ / MIN</div>
+            <div class="card-value" id="rpm">—</div>
+            <div class="card-sub">Current traffic</div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Service information</div>
+
+          <div class="info-grid">
+            <div class="panel">
+              <div class="endpoint">
+                <div class="endpoint-left">
+                  <span class="method">GET</span>
+                  <code>/api/health</code>
+                </div>
+
+                <span class="description"> Health check </span>
+              </div>
+
+              <div class="endpoint">
+                <div class="endpoint-left">
+                  <span class="method">GET</span>
+                  <code>/api/events</code>
+                </div>
+
+                <span class="description"> Event data </span>
+              </div>
+
+              <div class="endpoint">
+                <div class="endpoint-left">
+                  <span class="method">POST</span>
+                  <code>/api/orders</code>
+                </div>
+
+                <span class="description"> Create order </span>
+              </div>
+
+              <div class="endpoint">
+                <div class="endpoint-left">
+                  <span class="method">POST</span>
+                  <code>/api/payments</code>
+                </div>
+
+                <span class="description"> Payment processing </span>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="section-title">Infrastructure</div>
+
+              <div class="db-status">
+                <span class="db-indicator"></span>
+
+                <div>
+                  <div class="db-name" id="database">MongoDB Connected</div>
+
+                  <div class="card-sub">Primary database</div>
+                </div>
+              </div>
+
+              <div style="margin-top: 25px">
+                <div class="card-label">ENVIRONMENT</div>
+
+                <div class="card-value" id="environment">—</div>
+              </div>
+
+              <div style="margin-top: 25px">
+                <div class="card-label">LAST REQUEST</div>
+
+                <div style="color: #b7b7c4; font-size: 13px" id="lastRequest">
+                  —
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <div>© 2026 GarbaPass · Garba Nights, Dewas</div>
+
+          <div class="refresh">Live metrics · Updates automatically</div>
+        </footer>
+      </div>
+    </main>
+
+    <script>
+      function formatUptime(seconds) {
+        const days = Math.floor(seconds / 86400);
+        seconds %= 86400;
+
+        const hours = Math.floor(seconds / 3600);
+        seconds %= 3600;
+
+        const minutes = Math.floor(seconds / 60);
+
+        if (days > 0) {
+          return `${days}d ${hours}h`;
+        }
+
+        if (hours > 0) {
+          return `${hours}h ${minutes}m`;
+        }
+
+        return `${minutes}m`;
+      }
+
+      async function loadStats() {
+        try {
+          const response = await fetch("/api/status");
+
+          if (!response.ok) {
+            throw new Error("Status request failed");
+          }
+
+          const data = await response.json();
+
+          document.getElementById("apiStatus").textContent =
+            data.status === "ok" ? "Online" : "Degraded";
+
+          document.getElementById("uptime").textContent = formatUptime(
+            data.uptime,
+          );
+
+          document.getElementById("requests").textContent =
+            data.requests.total.toLocaleString();
+
+          document.getElementById("rpm").textContent =
+            data.requests.perMinute.toLocaleString();
+
+          document.getElementById("environment").textContent = data.environment;
+
+          document.getElementById("database").textContent =
+            data.database.status === "connected"
+              ? "MongoDB Connected"
+              : "MongoDB Disconnected";
+
+          document.getElementById("lastRequest").textContent = data.requests
+            .lastRequest
+            ? new Date(data.requests.lastRequest).toLocaleTimeString()
+            : "No requests yet";
+        } catch (error) {
+          document.getElementById("apiStatus").textContent = "Unavailable";
+
+          document.getElementById("database").textContent =
+            "Status unavailable";
+        }
+      }
+
+      loadStats();
+
+      setInterval(loadStats, 5000);
+    </script>
+  </body>
+</html>
