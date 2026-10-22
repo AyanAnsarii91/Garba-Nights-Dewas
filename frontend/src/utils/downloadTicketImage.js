@@ -120,7 +120,7 @@ const createTicketCanvas = async (ticket, event) => {
   context.textAlign = "left";
   context.fillStyle = "#d5fffb";
   context.font = "700 26px Arial, sans-serif";
-  context.fillText("GARBAPASS  /  DIGITAL ENTRY PASS", 120, 145);
+  context.fillText("DHOLKI NIGHTS  /  DIGITAL ENTRY PASS", 120, 145);
 
   context.fillStyle = "#ffffff";
   context.font = "700 68px Arial, sans-serif";
@@ -153,7 +153,7 @@ const createTicketCanvas = async (ticket, event) => {
   drawDetail(
     "Venue",
     [event?.venue?.name, event?.venue?.address].filter(Boolean).join(", ") ||
-      "Venue to be announced",
+      "BHAGAT SHREE MARRIAGE GARDEN, Raja Ram Nagar, Dewas",
     165,
     820,
     565,
@@ -196,14 +196,14 @@ const createTicketCanvas = async (ticket, event) => {
   context.fillStyle = "#64748b";
   context.font = "400 20px Arial, sans-serif";
   context.fillText(
-    "Keep this QR private. Ticket status is verified at the gate.",
+    "Govt ID required · No entry after 8:30 PM · Follow event terms",
     165,
     1670,
   );
   context.textAlign = "right";
   context.fillStyle = "#0f766e";
   context.font = "700 22px Arial, sans-serif";
-  context.fillText("GARBAPASS", 1280, 1670);
+  context.fillText("DHOLKI NIGHTS", 1280, 1670);
 
   return canvas;
 };
@@ -225,7 +225,7 @@ export const downloadTicketImage = async (ticket, event) => {
     "-",
   );
   link.href = imageUrl;
-  link.download = `GarbaPass-${ticketNumber}.png`;
+  link.download = `Dholki-Nights-${ticketNumber}.png`;
   document.body.appendChild(link);
   link.click();
   link.remove();

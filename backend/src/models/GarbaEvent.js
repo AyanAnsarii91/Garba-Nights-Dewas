@@ -32,6 +32,18 @@ const garbaEventSchema = new mongoose.Schema(
         type: String,
         default: "",
       },
+
+      coordinates: {
+        latitude: {
+          type: Number,
+          default: null,
+        },
+
+        longitude: {
+          type: Number,
+          default: null,
+        },
+      },
     },
 
     eventDate: {

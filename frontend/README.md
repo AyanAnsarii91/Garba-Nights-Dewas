@@ -1,13 +1,11 @@
-from pathlib import Path
-
-readme = """# 🎟️ GarbaPass
+# 🎟️ GarbaPass
 
 > A modern single-event Garba ticketing platform with online payments, QR tickets, and admin check-in.
 
 ## ✨ Features
 
 - 🎫 Dynamic Single, Couple & Group passes
-- 💳 Razorpay payment integration
+- 💳 PhonePe payment integration (UPI: PhonePe, GPay, Paytm, BHIM, Cards)
 - 🔐 Secure webhook-based payment confirmation
 - 🎟️ Automatic QR ticket generation
 - 📱 Admin QR scanner & check-in
@@ -17,7 +15,7 @@ readme = """# 🎟️ GarbaPass
 ## 🛠️ Tech Stack
 
 **Frontend:** React · Vite · Tailwind CSS · React Router · Motion  
-**Backend:** Node.js · Express · MongoDB · Mongoose · Razorpay  
+**Backend:** Node.js · Express · MongoDB · Mongoose · PhonePe  
 **Auth:** JWT · bcrypt  
 **QR:** QRCode · html5-qrcode
 
@@ -35,77 +33,14 @@ npm install
 npm run dev
 ```
 
-Create `backend/.env` with your MongoDB, JWT, Razorpay and SMTP credentials.
+Create `backend/.env` with your MongoDB, JWT, and PhonePe credentials.
 
 ## 🔄 Flow
 
 ```text
-Pass → Order → Razorpay → Webhook → Ticket + QR
-                                      ↓
-                              Admin Scanner
-                                      ↓
-                              Entry / Check-in
+Pass → Order → PhonePe → Webhook/Reconcile → Ticket + QR
+                                               ↓
+                                        Admin Scanner
+                                               ↓
+                                        Entry / Check-in
 ```
-
-## 👨‍💼 Admin
-
-```text
-/admin/login
-/admin
-/admin/passes
-/admin/orders
-/admin/scanner
-/admin/checkins
-```
-
-Create an admin:
-
-```bash
-npm run admin:create
-```
-
-## 📅 Event
-
-**25 October 2026**
-
-> The backend is the source of truth for payments, inventory, tickets and check-ins.
-"""
-
-gitignore = """# Dependencies
-node_modules/
-
-# Environment
-.env
-.env.*
-!.env.example
-
-# Logs
-*.log
-logs/
-
-# Build
-dist/
-build/
-
-# Coverage
-coverage/
-
-# IDE / OS
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# Temporary
-tmp/
-temp/
-.cache/
-
-# Secrets
-*.pem
-*.key
-"""
-
-Path("/mnt/data/README.md").write_text(readme, encoding="utf-8")
-Path("/mnt/data/.gitignore").write_text(gitignore, encoding="utf-8")
-print("Updated concise README.md and backend .gitignore")

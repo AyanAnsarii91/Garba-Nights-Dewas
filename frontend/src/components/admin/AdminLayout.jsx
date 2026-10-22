@@ -24,8 +24,8 @@ const AdminLayout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.14),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(20,184,166,0.12),_transparent_35%),#efffff]">
-      <div className="flex min-h-screen">
+    <div className="admin-app">
+      <div className="admin-layout">
         <AdminSidebar />
 
         {/* Mobile drawer */}
@@ -35,22 +35,22 @@ const AdminLayout = () => {
               type="button"
               aria-label="Close admin menu"
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 z-40 bg-slate-950/20 backdrop-blur-sm lg:hidden"
+              className="admin-drawer-scrim"
             />
 
-            <div className="fixed inset-y-0 left-0 z-50 w-72 p-4 lg:hidden">
+            <div className="admin-mobile-drawer">
               <AdminSidebar mobile onClose={() => setMobileMenuOpen(false)} />
             </div>
           </>
         )}
 
-        <main className="min-w-0 flex-1">
+        <main className="admin-main">
           <AdminTopbar
             admin={admin}
             onMenuClick={() => setMobileMenuOpen(true)}
           />
 
-          <div className="p-4 lg:p-6">
+          <div className="admin-content">
             <Outlet />
           </div>
         </main>

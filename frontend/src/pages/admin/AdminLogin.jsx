@@ -73,12 +73,12 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#efffff]">
+    <div className="admin-login-page">
       <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-cyan-300/20 blur-3xl" />
 
       <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-teal-300/20 blur-3xl" />
 
-      <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="admin-login-layout">
         <div className="w-full max-w-md">
           {/* Brand */}
           <div className="mb-8 text-center">
@@ -87,7 +87,7 @@ const AdminLogin = () => {
             </div>
 
             <h1 className="text-3xl font-black tracking-tight text-slate-900">
-              GarbaPass
+              Dholki Nights
             </h1>
 
             <p className="mt-2 text-sm font-medium text-slate-500">
@@ -108,7 +108,7 @@ const AdminLogin = () => {
               </h2>
 
               <p className="mt-1 text-sm leading-6 text-slate-500">
-                Sign in to manage Garba Night 2026.
+                Sign in to manage Dholki Nights 2026.
               </p>
             </div>
 
@@ -210,7 +210,7 @@ const AdminLogin = () => {
           </div>
 
           <p className="mt-6 text-center text-xs font-medium text-slate-400">
-            Garba Night 2026 • Admin Portal
+            Dholki Nights • Admin Portal
           </p>
         </div>
       </div>

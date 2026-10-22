@@ -1,17 +1,15 @@
+import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 
 import PassCard from "./PassCard.jsx";
 
-function PassSelector({
-  passes,
-  onSelect,
-}) {
+function PassSelector({ passes, onSelect }) {
+  const [activeType, setActiveType] = useState("ALL");
+  const passTypes = useMemo(() => [...new Set(passes.map((pass) => pass.passType).filter(Boolean))], [passes]);
+  const visiblePasses = activeType === "ALL" ? passes : passes.filter((pass) => pass.passType === activeType);
+
   return (
-    <section
-      id="passes"
-      className="relative px-5 py-24 sm:px-8"
-    >
-      <div className="mx-auto max-w-6xl">
+    <section id="passes" className="section-wrap">
         <motion.div
           initial={{
             opacity: 0,
@@ -24,26 +22,18 @@ function PassSelector({
           viewport={{
             once: true,
           }}
-          className="max-w-2xl"
+          className="section-heading"
         >
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-600">
-            Choose your experience
-          </p>
-
-          <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-            Pick your pass.
-            <br />
-            Bring your people.
-          </h2>
-
-          <p className="mt-4 text-base leading-7 text-slate-500">
-            Simple pricing, digital tickets and
-            QR-based entry. No paper. No nonsense.
-          </p>
+          <div><p className="section-kicker">Choose your experience</p><h2 className="section-title">Make the night yours.</h2></div>
+          <p className="section-copy">Pick the pass that fits your crew. Every option includes a digital ticket and secure QR entry.</p>
         </motion.div>
+        {passes.length > 0 && <div className="pass-tabs" role="group" aria-label="Filter passes by type">
+          <button type="button" className={`pass-tab ${activeType === "ALL" ? "is-active" : ""}`} aria-pressed={activeType === "ALL"} onClick={() => setActiveType("ALL")}>All passes</button>
+          {passTypes.map((type) => <button key={type} type="button" className={`pass-tab ${activeType === type ? "is-active" : ""}`} aria-pressed={activeType === type} onClick={() => setActiveType(type)}>{type.charAt(0) + type.slice(1).toLowerCase()}</button>)}
+        </div>}
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {passes.map((pass, index) => (
+        {visiblePasses.length > 0 ? <div className="pass-grid">
+          {visiblePasses.map((pass, index) => (
             <PassCard
               key={pass._id}
               pass={pass}
@@ -51,8 +41,7 @@ function PassSelector({
               onSelect={onSelect}
             />
           ))}
-        </div>
-      </div>
+        </div> : <div className="empty-passes">Passes will appear here when they become available.</div>}
     </section>
   );
 }

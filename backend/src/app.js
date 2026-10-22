@@ -10,12 +10,15 @@ import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import adminPassRoutes from "./routes/adminPassRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import phonepeWebhookRoutes from "./routes/phonepeWebhookRoutes.js";
 import razorpayWebhookRoutes from "./routes/razorpayWebhookRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import adminOrderRoutes from "./routes/adminOrderRoutes.js";
 import adminCheckinRoutes from "./routes/adminCheckinRoutes.js";
 import adminScannerRoutes from "./routes/adminScannerRoutes.js";
+import referralRoutes from "./routes/referralRoutes.js";
+import adminReferralRoutes from "./routes/adminReferralRoutes.js";
 
 const app = express();
 
@@ -111,15 +114,15 @@ app.use((req, res, next) => {
 
 /*
 |--------------------------------------------------------------------------
-| Razorpay Webhook
+| Payment Gateway Webhooks
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
-| This route must come BEFORE express.json().
 | Razorpay signature verification requires the raw request body.
+| PhonePe webhook parses JSON with X-VERIFY checksum header.
 |
 */
 
+app.use("/api/payments/phonepe", phonepeWebhookRoutes);
 app.use("/api/payments/razorpay/webhook", razorpayWebhookRoutes);
 
 /*
@@ -267,6 +270,15 @@ app.use("/api/admin/checkins", adminCheckinRoutes);
 */
 
 app.use("/api/admin/scanner", adminScannerRoutes);
+
+/*
+|--------------------------------------------------------------------------
+| Referral / Invite Functionality
+|--------------------------------------------------------------------------
+*/
+
+app.use("/api/referrals", referralRoutes);
+app.use("/api/admin/referrals", adminReferralRoutes);
 
 /*
 |--------------------------------------------------------------------------

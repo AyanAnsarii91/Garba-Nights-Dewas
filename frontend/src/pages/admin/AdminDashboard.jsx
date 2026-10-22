@@ -205,7 +205,7 @@ export default function AdminDashboard() {
           </p>
 
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900">
-            Garba Night 2026
+            {event?.name || "Event overview"}
           </h1>
 
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -441,7 +441,7 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-black text-slate-900">Recent Orders</h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Latest GarbaPass orders
+              Latest Dholki Nights orders
             </p>
           </div>
 

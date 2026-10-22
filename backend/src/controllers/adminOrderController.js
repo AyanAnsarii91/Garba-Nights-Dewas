@@ -33,6 +33,7 @@ export const getAdminOrders = async (req, res) => {
         { customerName: searchRegex },
         { customerPhone: searchRegex },
         { customerEmail: searchRegex },
+        { referralCode: searchRegex },
         {
           "items.passName": searchRegex,
         },

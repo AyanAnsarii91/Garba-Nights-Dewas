@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "GarbaPass",
-  "short_name": "GarbaPass",
-  "description": "Tickets and entry passes for Garba Night.",
+  "name": "Dholki Nights",
+  "short_name": "Dholki Nights",
+  "description": "Tickets and entry passes for Dholki Nights 2026.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -28,11 +28,11 @@ export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
 
     to: email,
 
-    subject: "GarbaPass Admin Password Reset",
+    subject: "Dholki Nights Admin Password Reset",
 
     text: `Hi ${name},
 
-A password reset was requested for your GarbaPass admin account.
+A password reset was requested for your Dholki Nights admin account.
 
 Reset your password using this link:
 
@@ -42,6 +42,6 @@ This link expires in 30 minutes.
 
 If you did not request this, you can safely ignore this email.
 
-GarbaPass`,
+Dholki Nights`,
   });
 };

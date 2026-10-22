@@ -133,7 +133,7 @@ export default function AdminScanner() {
         </h1>
 
         <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">
-          Scan a GarbaPass QR code to validate entry and mark the ticket as
+          Scan a Dholki Nights QR code to validate entry and mark the ticket as
           used.
         </p>
       </div>

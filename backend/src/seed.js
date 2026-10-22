@@ -23,7 +23,7 @@ const seedDatabase = async () => {
     // --------------------------------------------------
 
     const event = await GarbaEvent.create({
-      name: "Garba Night 2026",
+      name: "Dholki Nights 2026",
 
       slug: "garba-night-2026",
 
@@ -31,8 +31,12 @@ const seedDatabase = async () => {
         "An unforgettable evening of Garba, music, dance and celebration.",
 
       venue: {
-        name: "Main Event Ground",
-        address: "Jabalpur, Madhya Pradesh",
+        name: "BHAGAT SHREE MARRIAGE GARDEN",
+        address: "Raja Ram Nagar, Dewas, Madhya Pradesh 455001",
+        coordinates: {
+          latitude: 22.963353,
+          longitude: 76.027915,
+        },
       },
 
       eventDate: new Date("2026-10-25T18:00:00+05:30"),

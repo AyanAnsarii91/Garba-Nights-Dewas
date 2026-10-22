@@ -145,6 +145,21 @@ const garbaOrderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    referralCode: {
+      type: String,
+      default: "",
+      trim: true,
+      uppercase: true,
+      index: true,
+    },
+
+    referral: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GarbaReferral",
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,

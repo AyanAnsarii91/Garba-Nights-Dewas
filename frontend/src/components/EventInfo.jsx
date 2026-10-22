@@ -1,11 +1,21 @@
 import {
   CalendarDays,
   Clock3,
+  ExternalLink,
   MapPin,
+  Navigation,
   ShieldCheck,
 } from "lucide-react";
 
 function EventInfo({ event }) {
+  const venueName = event?.venue?.name || "BHAGAT SHREE MARRIAGE GARDEN";
+  const venueAddress = event?.venue?.address || "Raja Ram Nagar, Dewas, Madhya Pradesh 455001";
+  const latitude = event?.venue?.coordinates?.latitude ?? 22.963353;
+  const longitude = event?.venue?.coordinates?.longitude ?? 76.027915;
+
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+  const embedMapUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&hl=en&z=16&output=embed`;
+
   const formattedDate = event?.eventDate
     ? new Date(event.eventDate).toLocaleDateString(
         "en-IN",
@@ -16,73 +26,85 @@ function EventInfo({ event }) {
           year: "numeric",
         }
       )
-    : "";
+    : "Sunday, 25 October 2026";
 
   return (
-    <section
-      id="event"
-      className="px-5 py-20 sm:px-8"
-    >
-      <div className="mx-auto max-w-6xl">
-        <div className="overflow-hidden rounded-[2.5rem] border border-white/70 bg-white/45 p-6 shadow-[0_20px_80px_rgba(15,118,110,0.08)] backdrop-blur-2xl sm:p-10">
-          <div className="grid gap-10 lg:grid-cols-[1fr_0.8fr] lg:items-center">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-600">
-                Event details
-              </p>
+    <section id="event" className="event-section">
+      <div className="section-wrap">
+        <div className="event-grid">
+          <div>
+            <p className="section-kicker">The gathering</p>
+            <h2 className="section-title">A little more about the night.</h2>
+            <p className="event-description">
+              {event?.description || "An unforgettable evening of Garba, music, dance and celebration."}
+            </p>
+            <div className="event-details">
+              <InfoItem
+                icon={CalendarDays}
+                title="Date"
+                value={formattedDate}
+              />
 
-              <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-950">
-                {event?.name}
-              </h2>
+              <InfoItem
+                icon={Clock3}
+                title="Time"
+                value={[event?.startTime || "06:00 PM", event?.endTime || "11:00 PM"].filter(Boolean).join(" – ")}
+              />
 
-              <p className="mt-4 max-w-xl leading-7 text-slate-500">
-                {event?.description ||
-                  "Come dressed to dance and ready for a night to remember."}
-              </p>
+              <InfoItem
+                icon={MapPin}
+                title="Venue"
+                value={`${venueName} · Dewas`}
+              />
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                <InfoItem
-                  icon={CalendarDays}
-                  title="Date"
-                  value={formattedDate}
-                />
+              <InfoItem
+                icon={ShieldCheck}
+                title="Entry"
+                value="Govt ID + Secure QR (Closes 8:30 PM)"
+              />
+            </div>
+          </div>
 
-                <InfoItem
-                  icon={Clock3}
-                  title="Time"
-                  value={`${event?.startTime} - ${event?.endTime}`}
-                />
-
-                <InfoItem
-                  icon={MapPin}
-                  title="Venue"
-                  value={event?.venue?.name}
-                />
-
-                <InfoItem
-                  icon={ShieldCheck}
-                  title="Entry"
-                  value="Secure QR verification"
-                />
-              </div>
+          <div className="venue-card-wrapper" aria-label="Event venue location">
+            <div className="venue-map-frame-box">
+              <iframe
+                title="Venue Location - Bhagat Shree Marriage Garden Dewas"
+                src={embedMapUrl}
+                className="venue-embedded-map"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
 
-            <div className="rounded-[2rem] border border-white/70 bg-white/50 p-7 backdrop-blur-xl">
-              <p className="text-sm font-semibold text-slate-400">
-                Location
-              </p>
-
-              <div className="mt-5 flex h-44 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-100/70 to-teal-100/70">
-                <MapPin className="h-10 w-10 text-teal-600" />
+            <div className="venue-info-box">
+              <div className="venue-info-header">
+                <div className="venue-pin-badge">
+                  <MapPin size={18} />
+                </div>
+                <div>
+                  <span className="venue-location-kicker">Event Location</span>
+                  <h3 className="venue-location-name">{venueName}</h3>
+                </div>
               </div>
 
-              <h3 className="mt-5 text-lg font-bold text-slate-900">
-                {event?.venue?.name}
-              </h3>
+              <p className="venue-location-address">{venueAddress}</p>
 
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                {event?.venue?.address}
-              </p>
+              <div className="venue-coords-strip">
+                <span className="venue-coords-label">GPS: {latitude}, {longitude}</span>
+              </div>
+
+              <div className="venue-actions">
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="venue-maps-btn"
+                >
+                  <Navigation size={15} />
+                  <span>See Location on Google Maps</span>
+                  <ExternalLink size={13} />
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -97,16 +119,10 @@ function InfoItem({
   value,
 }) {
   return (
-    <div className="rounded-2xl border border-white/70 bg-white/45 p-4 backdrop-blur-xl">
-      <Icon className="h-5 w-5 text-teal-600" />
-
-      <p className="mt-3 text-xs font-medium text-slate-400">
-        {title}
-      </p>
-
-      <p className="mt-1 text-sm font-semibold leading-5 text-slate-700">
-        {value}
-      </p>
+    <div className="event-detail">
+      <Icon size={17} />
+      <span>{title}</span>
+      <strong>{value}</strong>
     </div>
   );
 }

@@ -114,7 +114,7 @@ export default function AdminOrders() {
         <h1 className="mt-1 text-3xl font-black text-slate-900">Orders</h1>
 
         <p className="mt-2 text-sm text-slate-500">
-          View and manage GarbaPass customer orders.
+          View and manage Dholki Nights customer orders.
         </p>
       </div>
 

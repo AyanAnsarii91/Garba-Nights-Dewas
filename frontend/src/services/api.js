@@ -60,3 +60,18 @@ export const createOrder = async (orderData) => {
     body: JSON.stringify(orderData),
   });
 };
+
+export const generateReferralCode = async ({ customerName, customerPhone }) => {
+  return apiRequest("/referrals/generate", {
+    method: "POST",
+    body: JSON.stringify({ customerName, customerPhone }),
+  });
+};
+
+export const trackReferralVisit = async (code) => {
+  return apiRequest("/referrals/track-visit", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+};
+

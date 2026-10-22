@@ -11,6 +11,7 @@ import AdminPasses from "./pages/admin/AdminPasses.jsx";
 import AdminOrders from "./pages/admin/AdminOrders.jsx";
 import AdminScanner from "./pages/admin/AdminScanner.jsx";
 import AdminCheckins from "./pages/admin/AdminCheckins.jsx";
+import AdminReferrals from "./pages/admin/AdminReferrals.jsx";
 
 import AdminLayout from "./components/admin/AdminLayout.jsx";
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute.jsx";
@@ -40,6 +41,8 @@ function App() {
             <Route path="/admin/scanner" element={<AdminScanner />} />
 
             <Route path="/admin/checkins" element={<AdminCheckins />} />
+
+            <Route path="/admin/referrals" element={<AdminReferrals />} />
           </Route>
         </Route>
       </Routes>

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import GarbaEvent from "../models/GarbaEvent.js";
 import GarbaPass from "../models/GarbaPass.js";
 import GarbaOrder from "../models/GarbaOrder.js";
+import GarbaReferral from "../models/GarbaReferral.js";
 
 const generateOrderNumber = () => {
   const timestamp = Date.now().toString().slice(-8);
@@ -15,8 +16,14 @@ export const createOrder = async (req, res) => {
   const session = await mongoose.startSession();
 
   try {
-    const { eventId, customerName, customerPhone, customerEmail, items } =
-      req.body;
+    const {
+      eventId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      items,
+      referralCode,
+    } = req.body;
 
     if (
       !eventId ||
@@ -134,6 +141,34 @@ export const createOrder = async (req, res) => {
     const convenienceFee = 0;
     const totalAmount = subtotal + convenienceFee;
 
+    let appliedReferral = null;
+    let cleanRefCode = "";
+
+    if (referralCode) {
+      cleanRefCode = String(referralCode)
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9_-]/g, "");
+
+      if (cleanRefCode) {
+        appliedReferral = await GarbaReferral.findOne({
+          code: cleanRefCode,
+          isActive: true,
+        }).session(session);
+
+        if (appliedReferral) {
+          await GarbaReferral.updateOne(
+            { _id: appliedReferral._id },
+            {
+              $inc: { totalOrders: 1 },
+              $set: { lastUsedAt: new Date() },
+            },
+            { session },
+          );
+        }
+      }
+    }
+
     const order = await GarbaOrder.create(
       [
         {
@@ -158,6 +193,10 @@ export const createOrder = async (req, res) => {
           totalAmount,
 
           paymentStatus: "PENDING",
+
+          referralCode: appliedReferral ? appliedReferral.code : cleanRefCode,
+
+          referral: appliedReferral ? appliedReferral._id : null,
 
           expiresAt: new Date(Date.now() + 15 * 60 * 1000),
         },

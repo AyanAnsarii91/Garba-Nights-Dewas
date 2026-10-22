@@ -21,6 +21,9 @@ function Checkout() {
   const event = location.state?.event;
   const pass = location.state?.pass;
 
+  /* Read referral code persisted by Home.jsx when ?ref= was in the URL */
+  const referralCode = sessionStorage.getItem("dholki_ref_code") || "";
+
   const [quantity, setQuantity] = useState(1);
 
   const [customerName, setCustomerName] = useState("");
@@ -90,6 +93,8 @@ function Checkout() {
             quantity,
           },
         ],
+
+        ...(referralCode ? { referralCode } : {}),
       });
 
       navigate("/payment", {
@@ -111,8 +116,8 @@ function Checkout() {
 
   if (!event || !pass) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#ecfffd] p-6">
-        <div className="rounded-[2rem] border border-white/70 bg-white/60 p-8 text-center shadow-xl backdrop-blur-2xl">
+      <div className="status-state">
+        <div className="status-card">
           <h1 className="text-2xl font-black text-slate-900">
             No pass selected
           </h1>
@@ -123,7 +128,7 @@ function Checkout() {
 
           <button
             onClick={() => navigate("/")}
-            className="mt-6 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+            className="button-primary mt-6"
           >
             Back to event
           </button>
@@ -133,7 +138,7 @@ function Checkout() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#ecfffd] px-4 py-6 sm:px-6 lg:px-8">
+    <main className="journey-page">
       {/* Background atmosphere */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-[-150px] top-[-100px] h-96 w-96 rounded-full bg-cyan-200/30 blur-3xl" />
@@ -141,24 +146,18 @@ function Checkout() {
         <div className="absolute bottom-[-150px] right-[-100px] h-96 w-96 rounded-full bg-teal-200/30 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl">
+      <div className="journey-shell">
         {/* Top bar */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="journey-topbar">
           <button
             onClick={() => navigate(-1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/70 bg-white/55 px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm backdrop-blur-xl transition hover:bg-white/80"
+            className="journey-back"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
 
-          <div className="hidden text-right sm:block">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-teal-600">
-              GarbaPass
-            </p>
-
-            <p className="text-xs text-slate-400">Secure checkout</p>
-          </div>
+          <div className="journey-brand"><span className="brand-mark"><Users size={18} /></span><span><strong>Dholki Nights</strong><small>Secure checkout</small></span></div>
         </div>
 
         {/* Heading */}
@@ -171,38 +170,35 @@ function Checkout() {
             opacity: 1,
             y: 0,
           }}
+          className="journey-intro"
         >
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-600">
-            Almost there
-          </p>
+          <p className="journey-kicker">Your night starts here</p>
 
-          <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+          <h1 className="journey-title">
             Complete your booking.
           </h1>
 
-          <p className="mt-3 text-sm text-slate-500 sm:text-base">
-            Enter your details and secure your GarbaPass.
-          </p>
+          <p className="journey-copy">A few details, then your pass is reserved.</p>
         </motion.div>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-10 grid gap-6 lg:grid-cols-[1fr_380px]"
+          className="journey-grid"
         >
           {/* Left */}
-          <div className="space-y-6">
+          <div className="journey-stack">
             {/* Customer details */}
-            <section className="rounded-[2rem] border border-white/70 bg-white/55 p-6 shadow-[0_20px_70px_rgba(15,118,110,0.07)] backdrop-blur-2xl sm:p-8">
+            <section className="journey-panel">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-600">
+                <p className="journey-step">
                   01
                 </p>
 
-                <h2 className="mt-2 text-2xl font-black text-slate-900">
+                <h2 className="journey-subtitle">
                   Your details
                 </h2>
 
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="journey-copy">
                   We'll use these details for your ticket.
                 </p>
               </div>
@@ -240,12 +236,12 @@ function Checkout() {
             </section>
 
             {/* Quantity */}
-            <section className="rounded-[2rem] border border-white/70 bg-white/55 p-6 shadow-[0_20px_70px_rgba(15,118,110,0.07)] backdrop-blur-2xl sm:p-8">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-600">
+            <section className="journey-panel">
+              <p className="journey-step">
                 02
               </p>
 
-              <div className="mt-2 flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+              <div className="quantity-row">
                 <div>
                   <h2 className="text-2xl font-black text-slate-900">
                     How many passes?
@@ -256,7 +252,7 @@ function Checkout() {
                   </p>
                 </div>
 
-                <div className="flex items-center rounded-2xl border border-white/80 bg-white/70 p-1 shadow-sm">
+                <div className="quantity-control">
                   <button
                     type="button"
                     onClick={() => handleQuantityChange(quantity - 1)}
@@ -283,7 +279,7 @@ function Checkout() {
             </section>
 
             {/* Trust */}
-            <div className="flex items-start gap-3 rounded-2xl border border-teal-100/80 bg-teal-50/50 p-4 backdrop-blur-xl">
+            <div className="journey-trust">
               <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-600" />
 
               <div>
@@ -292,18 +288,17 @@ function Checkout() {
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Your payment will be processed securely through Razorpay. Your
-                  ticket will be generated after successful payment
-                  verification.
+                  Your payment will be processed securely through PhonePe Payment Gateway. Your
+                  ticket will be generated automatically after verified payment confirmation.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Right summary */}
-          <aside className="lg:sticky lg:top-6 lg:h-fit">
-            <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/60 shadow-[0_25px_80px_rgba(15,118,110,0.1)] backdrop-blur-2xl">
-              <div className="bg-gradient-to-br from-teal-400/90 via-cyan-300/80 to-sky-200/80 p-6">
+          <aside className="journey-summary-wrap">
+            <div className="journey-summary">
+              <div className="summary-head">
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/75">
@@ -332,7 +327,7 @@ function Checkout() {
                 </div>
               </div>
 
-              <div className="p-6">
+              <div className="summary-body">
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">
@@ -366,7 +361,7 @@ function Checkout() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-bold text-white shadow-lg transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="button-primary summary-submit"
                 >
                   {loading ? (
                     <>
@@ -421,7 +416,7 @@ function InputField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="h-14 w-full rounded-2xl border border-white/80 bg-white/65 pl-12 pr-4 text-sm font-medium text-slate-800 outline-none backdrop-blur-xl transition placeholder:text-slate-400 focus:border-teal-300 focus:bg-white/85 focus:ring-4 focus:ring-teal-100/60"
+          className="journey-input"
         />
       </div>
     </label>

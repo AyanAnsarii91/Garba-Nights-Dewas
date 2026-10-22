@@ -240,6 +240,28 @@ export const deleteAdminPass = async (passId) => {
 
 /*
  * ---------------------------------------------------------
+ * REFERRALS
+ * ---------------------------------------------------------
+ */
+
+export const getAdminReferrals = async ({
+  search = "",
+  page = 1,
+  limit = 20,
+  sort = "recent",
+} = {}) => {
+  const params = new URLSearchParams();
+
+  if (search) params.set("search", search);
+  params.set("page", page);
+  params.set("limit", limit);
+  params.set("sort", sort);
+
+  return adminRequest(`/admin/referrals?${params.toString()}`);
+};
+
+/*
+ * ---------------------------------------------------------
  * LOGOUT
  * ---------------------------------------------------------
  */

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+import GarbaEvent from "../models/GarbaEvent.js";
 import GarbaTicket from "../models/GarbaTicket.js";
 import GarbaCheckIn from "../models/GarbaCheckIn.js";
 import GarbaOrder from "../models/GarbaOrder.js";

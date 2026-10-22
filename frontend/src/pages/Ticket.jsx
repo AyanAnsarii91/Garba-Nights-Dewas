@@ -3,8 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   CalendarDays,
   CheckCircle2,
+  Clock,
   Clock3,
   Download,
+  ExternalLink,
+  IdCard,
   Loader2,
   MapPin,
   ShieldCheck,
@@ -63,21 +66,14 @@ function Ticket() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#ecfffd] p-6">
-        <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-teal-100 border-t-teal-600" />
-          <p className="mt-5 text-sm font-semibold text-slate-500">
-            Loading your tickets...
-          </p>
-        </div>
-      </main>
+      <main className="status-state"><div className="status-card"><div className="status-spinner" /><p>Loading your tickets...</p></div></main>
     );
   }
 
   if (error || tickets.length === 0) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#ecfffd] p-6">
-        <div className="w-full max-w-md rounded-[2rem] border border-white/70 bg-white/65 p-8 text-center shadow-xl backdrop-blur-2xl">
+      <main className="status-state">
+        <div className="status-card">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50">
             <TicketIcon className="h-7 w-7 text-red-500" />
           </div>
@@ -89,7 +85,7 @@ function Ticket() {
           </p>
           <button
             onClick={() => navigate("/")}
-            className="mt-6 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700"
+            className="button-primary mt-6"
           >
             Back to event
           </button>
@@ -105,31 +101,31 @@ function Ticket() {
   const event = tickets[0].event;
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#ecfffd] px-4 py-8 sm:px-6 lg:px-8">
+    <main className="ticket-page">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-[-180px] top-[-150px] h-[450px] w-[450px] rounded-full bg-cyan-200/30 blur-3xl" />
         <div className="absolute right-[-150px] top-[20%] h-[450px] w-[450px] rounded-full bg-sky-200/30 blur-3xl" />
         <div className="absolute bottom-[-200px] left-[25%] h-[500px] w-[500px] rounded-full bg-teal-200/30 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="ticket-shell">
+        <div className="ticket-toolbar">
           <div>
-            <p className="text-sm font-black tracking-tight text-slate-950">
-              GarbaPass
+              <p className="ticket-brand">
+              Dholki Nights
             </p>
-            <p className="mt-0.5 text-xs text-slate-400">
+              <p className="ticket-caption">
               Your digital event {tickets.length === 1 ? "pass" : "passes"}
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-white/70 bg-white/55 px-4 py-2 text-xs font-bold text-teal-700 shadow-sm backdrop-blur-xl">
+          <div className="ticket-payment-state">
             <ShieldCheck className="h-4 w-4" />
             Payment confirmed
           </div>
         </div>
 
         {order && (
-          <div className="mb-6 rounded-2xl border border-white/70 bg-white/60 p-5 shadow-sm backdrop-blur-xl sm:flex sm:items-center sm:justify-between">
+          <div className="ticket-order-summary">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
                 Order {order.orderNumber}
@@ -146,17 +142,18 @@ function Ticket() {
           </div>
         )}
 
-        <div className="space-y-8">
+        <div className="ticket-list">
           {tickets.map((ticket) => (
             <TicketCard key={ticket.ticketNumber} ticket={ticket} event={event} />
           ))}
         </div>
 
-        <div className="mx-auto mt-6 flex max-w-xl items-center justify-center gap-2 text-center text-xs leading-5 text-slate-400">
+        <div className="ticket-note">
           <ShieldCheck className="h-4 w-4 shrink-0 text-teal-500" />
           Each QR code is securely linked to its ticket. Keep it ready at the
           event entrance.
         </div>
+        <TicketInstructions />
       </div>
     </main>
   );
@@ -176,14 +173,18 @@ function TicketCard({ ticket, event }) {
         })
       : "Date to be announced";
   const status = getTicketStatus(ticket.status);
+  const coordinates = event?.venue?.coordinates;
+  const mapUrl = coordinates?.latitude != null && coordinates?.longitude != null
+    ? `https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}`
+    : null;
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      className="overflow-hidden rounded-[2.5rem] border border-white/80 bg-white/65 shadow-[0_30px_100px_rgba(15,118,110,0.12)] backdrop-blur-2xl"
+      className="ticket-card"
     >
-      <div className="relative overflow-hidden bg-gradient-to-br from-teal-400 via-cyan-300 to-sky-200 px-6 py-8 text-white sm:px-10 sm:py-10">
+      <div className="ticket-banner">
         <div className="pointer-events-none absolute right-[-70px] top-[-100px] h-64 w-64 rounded-full bg-white/20 blur-3xl" />
         <div className="relative">
           <div className="flex items-start justify-between gap-5">
@@ -213,8 +214,8 @@ function TicketCard({ ticket, event }) {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_320px]">
-        <div className="p-6 sm:p-10">
+      <div className="ticket-body">
+        <div className="ticket-content">
           <div className="grid gap-5 sm:grid-cols-2">
             <Detail label="Pass" value={ticket.passName} />
             <Detail label="Pass type" value={formatPassType(ticket.passType)} />
@@ -245,11 +246,19 @@ function TicketCard({ ticket, event }) {
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-800">
-                  {event?.venue?.name || "Venue to be announced"}
+                  {event?.venue?.name || "BHAGAT SHREE MARRIAGE GARDEN"}
                 </p>
                 <p className="mt-1 text-sm leading-5 text-slate-500">
-                  {event?.venue?.address || "Venue address to be announced"}
+                  {event?.venue?.address || "Raja Ram Nagar, Dewas, Madhya Pradesh 455001"}
                 </p>
+                <a
+                  className="ticket-map-link"
+                  href={mapUrl || "https://www.google.com/maps/search/?api=1&query=22.963353,76.027915"}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  See Location &amp; Directions <ExternalLink size={13} />
+                </a>
               </div>
             </div>
           </div>
@@ -270,12 +279,12 @@ function TicketCard({ ticket, event }) {
           </div>
         </div>
 
-        <div className="border-t border-slate-200/70 bg-white/40 p-6 sm:p-10 lg:border-l lg:border-t-0">
-          <div className="text-center">
+        <div className="ticket-qr-side">
+          <div className="ticket-qr-block">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-600">
               Entry QR
             </p>
-            <div className="mx-auto mt-5 flex aspect-square max-w-[260px] items-center justify-center rounded-[2rem] border border-slate-100 bg-white p-4 shadow-[0_15px_50px_rgba(15,118,110,0.1)]">
+            <div className="ticket-qr-image">
               <img
                 src={ticket.qrCode}
                 alt={`Entry QR code for ticket ${ticket.ticketNumber}`}
@@ -304,10 +313,10 @@ function TicketCard({ ticket, event }) {
         </div>
       </div>
 
-      <div className="border-t border-dashed border-slate-300/80 bg-slate-50/50 px-6 py-5 sm:px-10">
+      <div className="ticket-actions">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-2 text-xs text-slate-400">
-            <p>Issued by GarbaPass</p>
+            <p>Issued by Dholki Nights</p>
             <p>
               Ticket:{" "}
               <span className="font-mono font-semibold text-slate-500">
@@ -338,7 +347,7 @@ function TicketCard({ ticket, event }) {
                 setDownloading(false);
               }
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="button-primary ticket-download"
           >
             {downloading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -359,6 +368,59 @@ function EventChip({ icon: Icon, text }) {
       <Icon className="h-4 w-4" />
       {text}
     </div>
+  );
+}
+
+function TicketInstructions() {
+  return (
+    <section className="ticket-instructions" aria-labelledby="ticket-instructions-title">
+      <div className="ticket-instructions-heading">
+        <ShieldCheck size={22} className="ticket-instructions-icon" />
+        <div>
+          <span className="ticket-instructions-kicker">Important Instructions</span>
+          <h2 id="ticket-instructions-title" className="ticket-instructions-title">
+            GARBA NIGHT – TERMS &amp; CONDITIONS
+          </h2>
+        </div>
+      </div>
+
+      <div className="ticket-key-rules">
+        <div className="ticket-key-rule">
+          <div className="ticket-rule-icon">
+            <IdCard size={18} />
+          </div>
+          <div>
+            <strong>1. Keep your any type of government ID proof</strong>
+            <p>Carry any valid government-issued photo ID proof (Aadhaar / Voter ID / Driving License / PAN) for mandatory security check at the gate.</p>
+          </div>
+        </div>
+        <div className="ticket-key-rule alert">
+          <div className="ticket-rule-icon alert">
+            <Clock size={18} />
+          </div>
+          <div>
+            <strong>2. After 8:30 there will be no entry for customers</strong>
+            <p>Gates close strictly at 8:30 PM. No admission will be permitted after 8:30 PM under any circumstances.</p>
+          </div>
+        </div>
+      </div>
+
+      <ul className="ticket-terms-list">
+        <li>Entry by valid ticket/pass only.</li>
+        <li>Security checking is mandatory.</li>
+        <li>No alcohol, drugs, weapons or dangerous items.</li>
+        <li>Misbehaviour, harassment and fighting are strictly prohibited.</li>
+        <li>Follow all event rules and security instructions.</li>
+        <li>Photography/videography as per event policy.</li>
+        <li>The organiser reserves the right to deny entry for valid safety or rule-related reasons, subject to applicable law.</li>
+      </ul>
+
+      <div className="ticket-thanks-box">
+        <p className="ticket-thanks">
+          <strong>Thank you for your cooperation. Enjoy Garba Night! 💃🪘</strong>
+        </p>
+      </div>
+    </section>
   );
 }
 
