@@ -6,16 +6,33 @@ import {
   Clock3,
   LockKeyhole,
   ShieldCheck,
-  Smartphone,
+  CreditCard,
 } from "lucide-react";
 import { motion } from "motion/react";
 
 import {
   createPaymentOrder,
+  verifyPayment,
   getOrderById,
   reconcilePayment,
   getEventBySlug,
 } from "../services/api.js";
+
+// Helper to ensure Razorpay checkout script is loaded
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 function Payment() {
   const location = useLocation();
@@ -33,7 +50,7 @@ function Payment() {
   const [error, setError] = useState("");
   const isPollingRef = useRef(false);
 
-  // Load order from query params if returning from PhonePe redirect
+  // Load order from query params if page reloaded or opened via link
   useEffect(() => {
     let isMounted = true;
 
@@ -74,7 +91,7 @@ function Payment() {
     };
   }, [queryOrderId, stateOrder?._id, navigate, event]);
 
-  // Polling function for verifying PhonePe payment confirmation
+  // Polling function for verifying payment confirmation
   const waitForPayment = useCallback(
     async (orderIdToVerify) => {
       const targetId = orderIdToVerify || order?._id || queryOrderId;
@@ -122,18 +139,11 @@ function Payment() {
       isPollingRef.current = false;
       setCheckingPayment(false);
       setError(
-        "Payment verification is taking longer than expected. If you completed payment in your UPI app, please refresh in a moment.",
+        "Payment verification is taking longer than expected. If your account was debited, please refresh in a moment to view your ticket.",
       );
     },
     [order?._id, queryOrderId, navigate],
   );
-
-  // If page was loaded via redirect with orderId, automatically start reconciliation
-  useEffect(() => {
-    if (queryOrderId) {
-      waitForPayment(queryOrderId);
-    }
-  }, [queryOrderId, waitForPayment]);
 
   // If order was already paid, navigate immediately
   useEffect(() => {
@@ -144,7 +154,7 @@ function Payment() {
     }
   }, [order?.paymentStatus, order?._id, navigate]);
 
-  // Initiate PhonePe Payment and redirect to PhonePe Pay Page
+  // Initiate Razorpay Standard Checkout
   const startPayment = async () => {
     setError("");
 
@@ -158,7 +168,7 @@ function Payment() {
     try {
       setLoading(true);
 
-      // First check if already paid
+      // Check if already paid first
       const reconciliation = await reconcilePayment(targetOrderId);
       const reconciledOrder = reconciliation.data?.order;
 
@@ -169,23 +179,102 @@ function Payment() {
         return;
       }
 
-      // Initiate PhonePe Standard Checkout
-      const response = await createPaymentOrder(targetOrderId);
-      const paymentData = response.data;
-
-      if (!paymentData?.checkoutUrl) {
+      // Ensure Razorpay script is ready
+      const scriptReady = await loadRazorpayScript();
+      if (!scriptReady || !window.Razorpay) {
         throw new Error(
-          response.message || "Failed to get PhonePe checkout URL",
+          "Payment gateway could not be loaded. Please check your internet connection and try again.",
         );
       }
 
-      // Redirect user directly to PhonePe secure pay page
-      window.location.href = paymentData.checkoutUrl;
+      // Backend STEP 1: Create Razorpay Order
+      const response = await createPaymentOrder(targetOrderId);
+      const paymentData = response.data;
+
+      if (!paymentData?.order_id && !paymentData?.razorpayOrderId) {
+        throw new Error(
+          response.message || "Failed to create Razorpay payment order",
+        );
+      }
+
+      const razorpayOrderId = paymentData.order_id || paymentData.razorpayOrderId;
+      const razorpayKey =
+        paymentData.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+
+      // STEP 2: Open Razorpay Checkout modal
+      const options = {
+        key: razorpayKey,
+        amount: paymentData.amount,
+        currency: paymentData.currency || "INR",
+        name: "Dholki Nights",
+        description: `${event?.name || "Garba Night"} Entry Pass`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: order?.customerName || "",
+          contact: order?.customerPhone || "",
+          email: order?.customerEmail || undefined,
+        },
+        theme: {
+          color: "#0f766e",
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+          },
+        },
+        // STEP 3: Handle payment success callback from modal
+        handler: async (paymentResponse) => {
+          setLoading(false);
+          setCheckingPayment(true);
+
+          try {
+            // Verify HMAC-SHA256 signature server-side
+            const verifyRes = await verifyPayment({
+              orderId: targetOrderId,
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+            });
+
+            if (
+              verifyRes.success &&
+              verifyRes.data?.order?.paymentStatus === "PAID"
+            ) {
+              setCheckingPayment(false);
+              navigate(`/tickets/order/${verifyRes.data.order._id || targetOrderId}`, {
+                replace: true,
+              });
+              return;
+            }
+
+            // Fallback to reconciliation polling if async verification in progress
+            waitForPayment(targetOrderId);
+          } catch (verifyError) {
+            console.error("Server payment verification error:", verifyError);
+            waitForPayment(targetOrderId);
+          }
+        },
+      };
+
+      const rzpInstance = new window.Razorpay(options);
+
+      rzpInstance.on("payment.failed", (failedResponse) => {
+        console.error("Razorpay payment failed:", failedResponse.error);
+        setLoading(false);
+        setCheckingPayment(false);
+        setError(
+          failedResponse.error?.description ||
+            "Payment failed or was declined. Please try again.",
+        );
+      });
+
+      rzpInstance.open();
     } catch (err) {
-      console.error("PhonePe payment initiation error:", err);
+      console.error("Payment initiation error:", err);
       setLoading(false);
+      setCheckingPayment(false);
       setError(
-        err.message || "Unable to start PhonePe payment. Please try again.",
+        err.message || "Unable to start Razorpay payment. Please try again.",
       );
     }
   };
@@ -231,8 +320,8 @@ function Payment() {
           <p className="journey-kicker">Final step</p>
           <h1 className="journey-title">Complete your payment.</h1>
           <p className="journey-copy">
-            Your pass is reserved temporarily. Pay securely with PhonePe, Google
-            Pay, Paytm, or any UPI app to confirm your booking.
+            Your pass is reserved temporarily. Pay securely with Razorpay (UPI,
+            Cards, NetBanking, Wallets) to confirm your booking.
           </p>
         </motion.div>
 
@@ -282,9 +371,9 @@ function Payment() {
                 />
 
                 <InfoCard
-                  icon={Smartphone}
+                  icon={CreditCard}
                   label="Gateway"
-                  value="PhonePe (UPI)"
+                  value="Razorpay"
                 />
               </div>
 
@@ -300,12 +389,12 @@ function Payment() {
 
                   <div>
                     <p className="text-sm font-bold text-slate-700">
-                      Verifying your payment with PhonePe
+                      Verifying your payment with Razorpay
                     </p>
 
                     <p className="mt-1 text-xs leading-5 text-slate-500">
-                      We're waiting for secure payment confirmation from PhonePe.
-                      Don't refresh this page yet.
+                      We're waiting for secure server confirmation. Don't
+                      refresh this page yet.
                     </p>
                   </div>
                 </div>
@@ -319,13 +408,13 @@ function Payment() {
                 {loading ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Opening PhonePe payment...
+                    Opening Razorpay Checkout...
                   </>
                 ) : checkingPayment ? (
                   "Verifying payment..."
                 ) : (
                   <>
-                    Pay ₹{payableAmount} via PhonePe / UPI
+                    Pay ₹{payableAmount} via Razorpay
                     <LockKeyhole className="h-4 w-4" />
                   </>
                 )}
@@ -334,8 +423,8 @@ function Payment() {
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-400">
                 <ShieldCheck className="h-4 w-4 text-teal-500" />
                 <span>
-                  Secure payment powered by <strong>PhonePe</strong> · Supports
-                  PhonePe, GPay, Paytm, BHIM & UPI
+                  Secure payment powered by <strong>Razorpay</strong> · Supports
+                  UPI (GPay, PhonePe, Paytm), Cards & NetBanking
                 </span>
               </div>
             </div>

@@ -4,6 +4,7 @@ import GarbaEvent from "../models/GarbaEvent.js";
 import GarbaPass from "../models/GarbaPass.js";
 import GarbaOrder from "../models/GarbaOrder.js";
 import GarbaReferral from "../models/GarbaReferral.js";
+import { releaseExpiredReservations } from "../services/paymentCompletionService.js";
 
 const generateOrderNumber = () => {
   const timestamp = Date.now().toString().slice(-8);
@@ -13,6 +14,11 @@ const generateOrderNumber = () => {
 };
 
 export const createOrder = async (req, res) => {
+  // Free any expired reservations first so available inventory is up to date
+  await releaseExpiredReservations().catch((err) =>
+    console.warn("Expired reservation release non-blocking error:", err.message),
+  );
+
   const session = await mongoose.startSession();
 
   try {
@@ -82,6 +88,8 @@ export const createOrder = async (req, res) => {
         throw new Error("Quantity must be a positive integer");
       }
 
+      // Check and atomically reserve inventory ensuring:
+      // soldQuantity + reservedQuantity + requestedQuantity <= totalQuantity
       const pass = await GarbaPass.findOneAndUpdate(
         {
           _id: passId,
@@ -95,7 +103,11 @@ export const createOrder = async (req, res) => {
           $expr: {
             $lte: [
               {
-                $add: ["$soldQuantity", "$reservedQuantity", quantity],
+                $add: [
+                  { $ifNull: ["$soldQuantity", 0] },
+                  { $ifNull: ["$reservedQuantity", 0] },
+                  quantity,
+                ],
               },
               "$totalQuantity",
             ],

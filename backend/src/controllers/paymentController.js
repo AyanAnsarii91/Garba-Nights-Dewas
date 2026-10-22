@@ -2,12 +2,16 @@ import mongoose from "mongoose";
 
 import GarbaOrder from "../models/GarbaOrder.js";
 import {
-  initiatePhonePePayment,
-  checkPhonePeStatus,
-} from "../services/phonepeService.js";
+  createRazorpayOrder,
+  getRazorpayKeyId,
+  verifyRazorpayCheckoutSignature,
+  fetchRazorpayPayment,
+  captureRazorpayPayment,
+  fetchRazorpayOrderPayments,
+} from "../services/razorpayService.js";
 import {
-  completePhonePePayment,
-  failPhonePePayment,
+  completeRazorpayPayment,
+  failRazorpayPayment,
 } from "../services/paymentCompletionService.js";
 
 const toOrderResponse = (order) => ({
@@ -18,95 +22,292 @@ const toOrderResponse = (order) => ({
   paymentOrderId: order.paymentOrderId,
   paymentId: order.paymentId,
   paymentGateway: order.paymentGateway,
+  paidAt: order.paidAt,
 });
 
 /**
- * Creates/initiates a PhonePe payment session for a GarbaPass order.
+ * Creates/initiates a Razorpay payment order for a GarbaPass order.
+ * Endpoint: POST /api/payments/create-order (or /api/create-order)
  */
 export const createPaymentOrder = async (req, res) => {
   try {
-    const { orderId } = req.body;
+    const { orderId, amount, currency, receipt } = req.body;
 
-    if (!orderId) {
+    let order = null;
+
+    if (orderId) {
+      if (!mongoose.isValidObjectId(orderId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid orderId",
+        });
+      }
+
+      order = await GarbaOrder.findById(orderId);
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found",
+        });
+      }
+
+      // Check if order reservation has expired
+      if (order.expiresAt && new Date() >= order.expiresAt) {
+        if (["PENDING", "PROCESSING"].includes(order.paymentStatus)) {
+          await failRazorpayPayment({
+            orderId: order._id,
+            reason: "Reservation expired",
+          });
+        }
+
+        return res.status(400).json({
+          success: false,
+          message: "Order has expired. Please select your pass again.",
+        });
+      }
+
+      // Check if order was already paid
+      if (order.paymentStatus === "PAID") {
+        return res.status(400).json({
+          success: false,
+          message: "Order has already been paid",
+        });
+      }
+    }
+
+    // Determine amount in paise
+    const amountInPaise = order
+      ? Math.round(order.totalAmount * 100)
+      : Math.round(Number(amount));
+
+    if (!amountInPaise || amountInPaise < 100) {
       return res.status(400).json({
         success: false,
-        message: "orderId is required",
+        message: "Amount must be at least 100 paise (₹1)",
       });
     }
 
-    if (!mongoose.isValidObjectId(orderId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid orderId",
+    const orderCurrency = currency || "INR";
+    const receiptId = order ? order.orderNumber : receipt || `REC-${Date.now()}`;
+
+    // If order already has an active Razorpay order in PROCESSING, return it
+    if (
+      order &&
+      order.paymentOrderId &&
+      order.paymentStatus === "PROCESSING"
+    ) {
+      return res.status(200).json({
+        success: true,
+        message: "Active Razorpay order retrieved",
+        data: {
+          order_id: order.paymentOrderId,
+          razorpayOrderId: order.paymentOrderId,
+          amount: amountInPaise,
+          currency: orderCurrency,
+          keyId: getRazorpayKeyId(),
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          gateway: "RAZORPAY",
+        },
       });
     }
 
-    const order = await GarbaOrder.findById(orderId);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
-
-    if (order.expiresAt && new Date() >= order.expiresAt) {
-      return res.status(400).json({
-        success: false,
-        message: "Order has expired. Please select your pass again.",
-      });
-    }
-
-    if (order.paymentStatus === "PAID") {
-      return res.status(400).json({
-        success: false,
-        message: "Order has already been paid",
-      });
-    }
-
-    // If already processing and has an active transaction ID, verify if still valid
-    // Or generate a fresh PhonePe session
-    const paymentInitiation = await initiatePhonePePayment({
-      orderId: order._id,
-      orderNumber: order.orderNumber,
-      amount: order.totalAmount,
-      customerPhone: order.customerPhone,
-      customerEmail: order.customerEmail,
-      customerName: order.customerName,
+    // Create a new order on Razorpay
+    const razorpayOrder = await createRazorpayOrder({
+      amount: amountInPaise,
+      currency: orderCurrency,
+      receipt: receiptId,
+      notes: order
+        ? {
+            garbaOrderId: String(order._id),
+            orderNumber: order.orderNumber,
+            customerPhone: order.customerPhone,
+            customerName: order.customerName,
+          }
+        : {},
     });
 
-    order.paymentGateway = "PHONEPE";
-    order.paymentOrderId = paymentInitiation.merchantTransactionId;
-    order.paymentStatus = "PROCESSING";
-
-    await order.save();
+    if (order) {
+      order.paymentGateway = "RAZORPAY";
+      order.paymentOrderId = razorpayOrder.id;
+      order.paymentStatus = "PROCESSING";
+      await order.save();
+    }
 
     return res.status(201).json({
       success: true,
-      message: "PhonePe payment initiated",
+      message: "Razorpay order created successfully",
       data: {
-        checkoutUrl: paymentInitiation.checkoutUrl,
-        merchantTransactionId: paymentInitiation.merchantTransactionId,
-        amount: paymentInitiation.amount,
-        currency: "INR",
-        orderId: order._id,
-        orderNumber: order.orderNumber,
-        gateway: "PHONEPE",
+        order_id: razorpayOrder.id,
+        razorpayOrderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency || "INR",
+        keyId: getRazorpayKeyId(),
+        orderId: order?._id,
+        orderNumber: order?.orderNumber,
+        gateway: "RAZORPAY",
       },
     });
   } catch (error) {
     console.error("Create payment order error:", error);
 
-    return res.status(500).json({
+    const statusCode = error.statusCode || 500;
+    const message =
+      error.error?.description ||
+      error.message ||
+      "Failed to initiate Razorpay payment";
+
+    return res.status(statusCode).json({
       success: false,
-      message: error.message || "Failed to initiate payment",
+      message,
     });
   }
 };
 
 /**
- * Reconciles the order payment status against PhonePe.
- * Never trusts frontend assertions alone.
+ * Verifies Razorpay payment signature and marks order PAID after complete server-side verification.
+ * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
+ * Endpoint: POST /api/payments/verify (or /api/verify-payment)
+ */
+export const verifyPayment = async (req, res) => {
+  try {
+    const orderId = req.body.orderId || req.body.garbaOrderId;
+    const razorpayOrderId =
+      req.body.razorpay_order_id || req.body.order_id || req.body.razorpayOrderId;
+    const razorpayPaymentId =
+      req.body.razorpay_payment_id || req.body.payment_id || req.body.razorpayPaymentId;
+    const razorpaySignature =
+      req.body.razorpay_signature || req.body.signature || req.body.razorpaySignature;
+
+    // Validate required fields
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required Razorpay payment verification fields",
+      });
+    }
+
+    // Step 1: Verify HMAC-SHA256 Signature using Razorpay Secret Key
+    const isSignatureValid = verifyRazorpayCheckoutSignature({
+      orderId: razorpayOrderId,
+      paymentId: razorpayPaymentId,
+      signature: razorpaySignature,
+    });
+
+    if (!isSignatureValid) {
+      console.warn(
+        `❌ Signature verification failed for Razorpay order ${razorpayOrderId}`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Razorpay payment signature",
+      });
+    }
+
+    // Step 2: Locate the GarbaPass Order
+    let order = null;
+    if (orderId && mongoose.isValidObjectId(orderId)) {
+      order = await GarbaOrder.findById(orderId);
+    } else {
+      order = await GarbaOrder.findOne({ paymentOrderId: razorpayOrderId });
+    }
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found for this payment",
+      });
+    }
+
+    // Idempotency: If order was already confirmed PAID, return existing order
+    if (order.paymentStatus === "PAID") {
+      return res.status(200).json({
+        success: true,
+        message: "Payment already verified",
+        data: { order: toOrderResponse(order) },
+      });
+    }
+
+    // Ensure Razorpay Order ID matches the GarbaPass order
+    if (order.paymentOrderId && order.paymentOrderId !== razorpayOrderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Razorpay order ID does not match this GarbaPass order",
+      });
+    }
+
+    // Step 3: Server-side Verification against Razorpay Payments API
+    const payment = await fetchRazorpayPayment(razorpayPaymentId);
+
+    if (!payment) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment record not found on Razorpay",
+      });
+    }
+
+    if (payment.order_id !== razorpayOrderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment entity order ID mismatch",
+      });
+    }
+
+    const expectedAmountPaise = Math.round(order.totalAmount * 100);
+
+    if (payment.amount !== expectedAmountPaise) {
+      return res.status(400).json({
+        success: false,
+        message: `Payment amount mismatch: expected ${expectedAmountPaise} paise, received ${payment.amount} paise`,
+      });
+    }
+
+    let finalPayment = payment;
+
+    // Capture authorized payment if needed
+    if (finalPayment.status === "authorized") {
+      finalPayment = await captureRazorpayPayment(
+        finalPayment.id,
+        expectedAmountPaise,
+        "INR",
+      );
+    }
+
+    if (finalPayment.status !== "captured") {
+      return res.status(400).json({
+        success: false,
+        message: `Payment not captured (current status: ${finalPayment.status})`,
+      });
+    }
+
+    // Step 4: Atomically complete order, finalize inventory, and generate ticket
+    const completedOrder = await completeRazorpayPayment({
+      razorpayOrderId,
+      razorpayPaymentId: finalPayment.id,
+      paymentAmount: finalPayment.amount,
+      orderId: order._id,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment verified successfully",
+      data: {
+        order: toOrderResponse(completedOrder || order),
+      },
+    });
+  } catch (error) {
+    console.error("Verify payment error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to verify payment",
+    });
+  }
+};
+
+/**
+ * Reconciles payment status against Razorpay API for page refreshes / reconnection.
  */
 export const reconcilePayment = async (req, res) => {
   try {
@@ -136,53 +337,50 @@ export const reconcilePayment = async (req, res) => {
       });
     }
 
-    // If order is processing and has a payment transaction ID, query PhonePe Status API
-    if (order.paymentStatus === "PROCESSING" && order.paymentOrderId) {
+    // If order has an active Razorpay Order ID, query Razorpay
+    if (order.paymentOrderId && ["PENDING", "PROCESSING"].includes(order.paymentStatus)) {
       try {
-        const phonePeStatus = await checkPhonePeStatus(order.paymentOrderId);
+        const paymentsResponse = await fetchRazorpayOrderPayments(order.paymentOrderId);
+        const payments = paymentsResponse?.items || [];
 
-        if (
-          phonePeStatus.state === "COMPLETED" ||
-          phonePeStatus.code === "PAYMENT_SUCCESS"
-        ) {
-          const completedOrder = await completePhonePePayment({
-            merchantTransactionId: order.paymentOrderId,
-            transactionId: phonePeStatus.transactionId,
-            paymentAmount: phonePeStatus.amount,
-          });
+        const captured =
+          payments.find((p) => p.status === "captured") ||
+          payments.find((p) => p.status === "authorized");
 
-          return res.status(200).json({
-            success: true,
-            data: { order: toOrderResponse(completedOrder || order) },
-          });
+        if (captured) {
+          const expectedPaise = Math.round(order.totalAmount * 100);
+
+          let activePayment = captured;
+          if (activePayment.status === "authorized") {
+            activePayment = await captureRazorpayPayment(
+              activePayment.id,
+              expectedPaise,
+              "INR",
+            );
+          }
+
+          if (activePayment.status === "captured" && activePayment.amount === expectedPaise) {
+            const completedOrder = await completeRazorpayPayment({
+              razorpayOrderId: order.paymentOrderId,
+              razorpayPaymentId: activePayment.id,
+              paymentAmount: activePayment.amount,
+              orderId: order._id,
+            });
+
+            return res.status(200).json({
+              success: true,
+              data: { order: toOrderResponse(completedOrder || order) },
+            });
+          }
         }
-
-        if (
-          phonePeStatus.state === "FAILED" ||
-          ["PAYMENT_ERROR", "PAYMENT_DECLINED", "TIMED_OUT"].includes(
-            phonePeStatus.code,
-          )
-        ) {
-          const failedOrder = await failPhonePePayment({
-            merchantTransactionId: order.paymentOrderId,
-            transactionId: phonePeStatus.transactionId,
-            reason: phonePeStatus.code,
-          });
-
-          return res.status(200).json({
-            success: true,
-            data: { order: toOrderResponse(failedOrder || order) },
-          });
-        }
-      } catch (phonePeError) {
+      } catch (rzpErr) {
         console.warn(
-          `[PhonePe] Reconcile status check warning for order ${order.orderNumber}:`,
-          phonePeError.message,
+          `[Razorpay] Reconcile query warning for order ${order.orderNumber}:`,
+          rzpErr.message,
         );
       }
     }
 
-    // Refresh and return latest order state
     const latestOrder = await GarbaOrder.findById(orderId);
 
     return res.status(200).json({
@@ -201,16 +399,8 @@ export const reconcilePayment = async (req, res) => {
   }
 };
 
-/**
- * Verifies payment for an order by querying PhonePe backend directly.
- * Does not trust any client-supplied signature or success payload.
- */
-export const verifyPayment = async (req, res) => {
-  return reconcilePayment(req, res);
-};
-
 export default {
   createPaymentOrder,
-  reconcilePayment,
   verifyPayment,
+  reconcilePayment,
 };

@@ -36,7 +36,19 @@ function Checkout() {
 
   const [loading, setLoading] = useState(false);
 
-  const maxQuantity = pass?.maxPerOrder || 1;
+  const availableStock = Math.max(
+    0,
+    Number(pass?.totalQuantity ?? Infinity) -
+      Number(pass?.soldQuantity || 0) -
+      Number(pass?.reservedQuantity || 0),
+  );
+  const maxQuantity = Math.max(
+    1,
+    Math.min(
+      pass?.maxPerOrder || 1,
+      availableStock > 0 ? availableStock : pass?.maxPerOrder || 1,
+    ),
+  );
 
   const subtotal = useMemo(() => {
     if (!pass) return 0;
@@ -288,7 +300,7 @@ function Checkout() {
                 </p>
 
                 <p className="mt-1 text-xs leading-5 text-slate-500">
-                  Your payment will be processed securely through PhonePe Payment Gateway. Your
+                  Your payment will be processed securely through Razorpay Payment Gateway. Your
                   ticket will be generated automatically after verified payment confirmation.
                 </p>
               </div>

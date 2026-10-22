@@ -19,6 +19,10 @@ import adminCheckinRoutes from "./routes/adminCheckinRoutes.js";
 import adminScannerRoutes from "./routes/adminScannerRoutes.js";
 import referralRoutes from "./routes/referralRoutes.js";
 import adminReferralRoutes from "./routes/adminReferralRoutes.js";
+import {
+  createPaymentOrder,
+  verifyPayment,
+} from "./controllers/paymentController.js";
 
 const app = express();
 
@@ -122,8 +126,10 @@ app.use((req, res, next) => {
 |
 */
 
-app.use("/api/payments/phonepe", phonepeWebhookRoutes);
 app.use("/api/payments/razorpay/webhook", razorpayWebhookRoutes);
+app.use("/api/payments/webhook", razorpayWebhookRoutes);
+app.use("/api/razorpay/webhook", razorpayWebhookRoutes);
+app.use("/api/payments/phonepe", phonepeWebhookRoutes);
 
 /*
 |--------------------------------------------------------------------------
@@ -222,6 +228,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/tickets", ticketRoutes);
 
 app.use("/api/payments", paymentRoutes);
+app.post("/api/create-order", createPaymentOrder);
+app.post("/api/verify-payment", verifyPayment);
 
 /*
 |--------------------------------------------------------------------------
